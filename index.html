@@ -968,7 +968,6 @@ table{max-width:100%}
   .mbar{padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom,0px))}
   .mbar a{min-height:40px;font-size:.72rem;gap:1px}
   body{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
-  .cookie{bottom:calc(66px + env(safe-area-inset-bottom,0px))}
   .section,.about-intro,.final-section{padding-block:38px}
   .phero{padding:26px 0 24px}
   .phero--img{padding:34px 0 32px}
@@ -1045,13 +1044,52 @@ body.is-typing .mbar{display:none}
 .stepgroup p.small{font-size:.9rem;margin-top:2px}
 
 /* --- Cookie ------------------------------------------------- */
-.cookie{position:fixed;left:16px;right:16px;bottom:16px;z-index:90;background:#fff;border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow-l);padding:22px 24px;max-width:820px;margin-inline:auto;display:none}
+/* Samtykket ligger langs bunnen og stenger ingenting: siden kan brukes som
+   vanlig mens feltet står der. Det ligger likevel over modalene, slik at det
+   er synlig og klikkbart med én gang – også mens avdelingsvelgeren er åpen.
+   Selve rammen tar ikke imot klikk; det gjør bare kortet inni. */
+.cookie{position:fixed;left:0;right:0;bottom:0;z-index:110;display:none;pointer-events:none;
+  padding:0 max(16px,env(safe-area-inset-right,0px))
+          max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .cookie.is-open{display:block}
-@media(max-width:768px){.cookie{bottom:calc(82px + env(safe-area-inset-bottom,0px))}}
-.cookie h2{font-size:1.12rem}
-.cookie p{font-size:.92rem;margin-top:9px}
-.cookie__btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+/* På en telefon er det ikke plass til både en åpen dialog og samtykkefeltet.
+   Feltet venter da til dialogen er lukket, i stedet for å dekke den. */
+.cookie.is-waiting{display:none}
+/* På mobil ligger den faste bunnraden med snarveier under samtykkefeltet. */
+@media(max-width:768px){
+  .cookie{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+}
+/* «Tilpass» åpnes oppe på samtykkefeltet og må derfor ligge over det. Den
+   dekker feltet helt, og nullstiller derfor høyden under seg. */
+#ckOvl{z-index:130;--ck-space:0px}
+/* Ingen dialog skal havne under samtykkefeltet. Høyden måles i JS, og
+   modalene får både ekstra bunnluft og en lavere makshøyde så lenge feltet
+   står der – innholdet ruller inne i dialogen som før. */
+.ovl{padding-bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + var(--ck-space,0px))}
+.dlg{max-height:calc(100vh - 32px - var(--ck-space,0px))}
+@supports (max-height:100dvh){
+  .dlg{max-height:calc(100dvh - 32px - var(--ck-space,0px))}
+}
+.cookie__card{pointer-events:auto;background:#fff;border:1px solid var(--line);
+  border-top:4px solid var(--turq);border-radius:var(--r-l);box-shadow:var(--shadow-l);
+  padding:clamp(22px,2.6vw,30px);max-width:900px;margin-inline:auto;
+  animation:ckup .35s var(--ease);max-height:calc(100vh - 96px);overflow-y:auto;
+  -webkit-overflow-scrolling:touch}
+@supports (max-height:100dvh){
+  .cookie__card{max-height:calc(100dvh - 96px)}
+}
+@keyframes ckup{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.cookie h2{font-size:clamp(1.15rem,1.05rem + .45vw,1.4rem)}
+.cookie p{font-size:.95rem;margin-top:10px;color:var(--text-soft);max-width:70ch}
+.cookie__btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
 .cookie__btns .btn{flex:1 1 auto;min-width:150px}
+/* Kort skjerm i liggende format: kompakt felt over en lavere bunnrad. */
+@media(max-height:520px) and (orientation:landscape){
+  .cookie{padding-bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+  .cookie__card{padding:18px 20px}
+  .cookie p{margin-top:6px}
+  .cookie__btns{margin-top:14px}
+}
 .toggles{display:grid;gap:14px;margin-top:22px}
 .toggle{display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--grey)}
 .toggle input{width:20px;height:20px;min-height:0;flex:none;margin-top:2px;accent-color:var(--turq-deep)}
@@ -1914,12 +1952,14 @@ h1,h2,h3,p,li,dd,dt,td,th,label,.lead{overflow-wrap:break-word}
 
 <!-- ============ SAMTYKKE ============ -->
 <div class="cookie" id="cookieBar" role="dialog" aria-modal="false" aria-labelledby="ckH" aria-describedby="ckP">
-  <h2 id="ckH">Vi bruker informasjonskapsler</h2>
-  <p id="ckP">Nødvendige informasjonskapsler får nettsiden til å fungere. Vi vil også gjerne bruke statistikk og markedsføring for å se hvilke annonser som gir nye elever. Du velger selv.</p>
-  <div class="cookie__btns">
-    <button class="btn btn--primary" data-consent="all">Godta alle</button>
-    <button class="btn btn--ghost" data-consent="necessary">Kun nødvendige</button>
-    <button class="btn btn--ghost" data-consent="custom">Tilpass</button>
+  <div class="cookie__card">
+    <h2 id="ckH">Vi bruker informasjonskapsler</h2>
+    <p id="ckP">Nødvendige informasjonskapsler får nettsiden til å fungere. Vi vil også gjerne bruke statistikk og markedsføring for å se hvilke annonser som gir nye elever. Du velger selv.</p>
+    <div class="cookie__btns">
+      <button class="btn btn--primary" data-consent="all">Godta alle</button>
+      <button class="btn btn--ghost" data-consent="necessary">Kun nødvendige</button>
+      <button class="btn btn--ghost" data-consent="custom">Tilpass</button>
+    </div>
   </div>
 </div>
 
@@ -2506,7 +2546,7 @@ const SITE_CONFIG = {
          "ga4"  = kun Google Analytics 4 direkte
          "none" = ingen analyse */
     analyticsMode: "gtm",
-    gtmId: "",            // f.eks. "GTM-XXXXXXX". elektrisktrafikkskole.no bruker i dag GTM-KZF3PCJ.
+    gtmId: "GTM-KZF3PCJ", // f.eks. "GTM-XXXXXXX". elektrisktrafikkskole.no bruker i dag GTM-KZF3PCJ.
     ga4Id: "",            // f.eks. "G-XXXXXXXXXX". Brukes kun når analyticsMode er "ga4".
     metaPixelId: "",      // f.eks. "123456789012345". Krever samtykke til markedsføring.
     minFormSeconds: 3     // Enkel robotsperre: skjema sendt raskere enn dette avvises.
@@ -2611,7 +2651,7 @@ function saveConsent(c){
     v: 1, date: new Date().toISOString(),
     analytics: consent.analytics, marketing: consent.marketing
   }));
-  $("#cookieBar").classList.remove("is-open");
+  closeConsentBar();
   closeModal("#ckOvl");
   applyConsent();
 
@@ -2624,6 +2664,40 @@ function saveConsent(c){
   }
   track("consent_updated", { analytics: consent.analytics, marketing: consent.marketing });
 }
+/* Samtykkefeltet sperrer ingenting: ingen rullelås, og det tar ikke fokus
+   fra siden. To ting må det likevel holde styr på: åpne dialoger skal få nok
+   bunnluft til at de aldri havner under feltet, og på en telefon – der det
+   ikke er plass til begge deler – venter feltet til dialogen er lukket. */
+function consentBarCrowded(){
+  return window.matchMedia("(max-width:768px)").matches && !!$(".ovl.is-open");
+}
+function syncConsentSpace(){
+  const ck = $("#cookieBar"); if (!ck) return;
+  const wanted = ck.classList.contains("is-open");
+  ck.classList.toggle("is-waiting", wanted && consentBarCrowded());
+  const shown = wanted && !ck.classList.contains("is-waiting");
+  const h = shown ? Math.ceil(ck.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty("--ck-space", h + "px");
+}
+function openConsentBar(){
+  const ck = $("#cookieBar"); if (!ck) return;
+  ck.classList.add("is-open");
+  syncConsentSpace();
+}
+function closeConsentBar(){
+  const ck = $("#cookieBar"); if (!ck) return;
+  ck.classList.remove("is-open");
+  syncConsentSpace();
+}
+/* Høyden endrer seg når teksten brytes annerledes eller skjermen snus.
+   ResizeObserver holder bunnluften i takt av seg selv; resize og load
+   dekker nettlesere uten den. */
+if (window.ResizeObserver){
+  const ckEl = $("#cookieBar");
+  if (ckEl) new ResizeObserver(syncConsentSpace).observe(ckEl);
+}
+window.addEventListener("resize", syncConsentSpace);
+window.addEventListener("load", syncConsentSpace);
 function applyConsent(){
   const I = SITE_CONFIG.integrations;
   gtagPush("consent", "update", {
@@ -2793,12 +2867,14 @@ function openModal(sel, opener){
   document.body.classList.add("is-locked");
   const f = focusables(ovl)[0];
   if (f) setTimeout(() => f.focus(), 30);
+  syncConsentSpace();
 }
 function closeModal(sel){
   const ovl = $(sel); if (!ovl || !ovl.classList.contains("is-open")) return;
   ovl.classList.remove("is-open");
   if (!$$(".ovl.is-open").length) document.body.classList.remove("is-locked");
   if (lastFocus && lastFocus.focus) lastFocus.focus();
+  syncConsentSpace();
 }
 function focusables(r){
   return $$('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])', r)
@@ -4179,7 +4255,7 @@ function initConsentUi(){
     if (consent.analytics) ATTR.restore();
     applyConsent();
   } else {
-    $("#cookieBar").classList.add("is-open");
+    openConsentBar();
   }
 
   renderLogo();
